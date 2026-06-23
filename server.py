@@ -97,12 +97,13 @@ class CaptureWorker(threading.Thread):
     """Camera -> overlay latest predictions -> JPEG -> broker. Drives the stream."""
 
     def __init__(self, camera: Camera, state: SharedState, broker: FrameBroker,
-                 jpeg_quality: int = 80) -> None:
+                 jpeg_quality: int = 80, detect_threshold: float = 0.5) -> None:
         super().__init__(daemon=True, name="capture")
         self.camera = camera
         self.state = state
         self.broker = broker
         self.jpeg_quality = jpeg_quality
+        self.detect_threshold = detect_threshold
         self._stop_event = threading.Event()
         self.fps = 0.0
 
@@ -127,7 +128,7 @@ class CaptureWorker(threading.Thread):
             self.state.put_frame(frame)
             preds, inf_fps = self.state.get_predictions()
             annotated = frame.copy()
-            draw_results(annotated, preds, self.fps, inf_fps)
+            draw_results(annotated, preds, self.fps, inf_fps, self.detect_threshold)
 
             ok, buf = cv2.imencode(".jpg", annotated, encode_params)
             if ok:

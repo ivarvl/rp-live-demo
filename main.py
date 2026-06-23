@@ -36,6 +36,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--no-normalize", action="store_true",
                    help="skip ImageNet mean/std normalisation")
     p.add_argument("--topk", type=int, default=5)
+    p.add_argument("--detect-threshold", type=float, default=0.5,
+                   help="top-1 score (0-1) above which the result is enlarged "
+                        "and highlighted as a detection")
     p.add_argument("--threads", type=int, default=4,
                    help="onnxruntime intra-op threads (Pi 5 has 4 cores)")
 
@@ -67,7 +70,8 @@ def main() -> None:
 
     # Capture drives the smooth stream; inference runs independently and only
     # updates the predictions the capture loop overlays.
-    capture = CaptureWorker(camera, state, broker, jpeg_quality=args.jpeg_quality)
+    capture = CaptureWorker(camera, state, broker, jpeg_quality=args.jpeg_quality,
+                            detect_threshold=args.detect_threshold)
     inference = InferenceWorker(classifier, state)
     capture.start()
     inference.start()

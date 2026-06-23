@@ -14,8 +14,13 @@ _BAR_FG = (0, 200, 90)
 _TEXT = (255, 255, 255)
 
 
-def draw_results(frame: np.ndarray, preds: list[Prediction], fps: float) -> np.ndarray:
-    """Overlay a semi-transparent panel with top-k bars and an FPS readout."""
+def draw_results(frame: np.ndarray, preds: list[Prediction],
+                 cam_fps: float, infer_fps: float) -> np.ndarray:
+    """Overlay a semi-transparent panel with top-k bars and FPS readouts.
+
+    ``cam_fps`` is the smooth stream rate; ``infer_fps`` is the (lower) rate the
+    model actually updates predictions at — the two are decoupled by design.
+    """
     h, w = frame.shape[:2]
     rows = len(preds)
     pad = 12
@@ -27,7 +32,8 @@ def draw_results(frame: np.ndarray, preds: list[Prediction], fps: float) -> np.n
     cv2.rectangle(overlay, (0, 0), (panel_w, panel_h), _PANEL_BG, -1)
     cv2.addWeighted(overlay, 0.45, frame, 0.55, 0, frame)
 
-    cv2.putText(frame, f"{fps:4.1f} FPS", (pad, 20), _FONT, 0.6, _TEXT, 1, cv2.LINE_AA)
+    cv2.putText(frame, f"cam {cam_fps:4.1f}   infer {infer_fps:4.1f} FPS",
+                (pad, 20), _FONT, 0.55, _TEXT, 1, cv2.LINE_AA)
 
     y = 26 + pad
     bar_x = pad + 150

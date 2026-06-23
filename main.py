@@ -12,7 +12,13 @@ from waitress import serve
 
 from camera import Camera
 from inference import IMAGENET_MEAN, IMAGENET_STD, Classifier, load_labels
-from server import FrameBroker, InferenceWorker, create_app
+from server import (
+    CaptureWorker,
+    FrameBroker,
+    InferenceWorker,
+    SharedState,
+    create_app,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -57,10 +63,16 @@ def main() -> None:
 
     camera = Camera(source, width=args.cam_width, height=args.cam_height)
     broker = FrameBroker()
-    worker = InferenceWorker(camera, classifier, broker, jpeg_quality=args.jpeg_quality)
-    worker.start()
+    state = SharedState()
 
-    app = create_app(broker, worker, title=args.title)
+    # Capture drives the smooth stream; inference runs independently and only
+    # updates the predictions the capture loop overlays.
+    capture = CaptureWorker(camera, state, broker, jpeg_quality=args.jpeg_quality)
+    inference = InferenceWorker(classifier, state)
+    capture.start()
+    inference.start()
+
+    app = create_app(broker, capture, inference, title=args.title)
     import socket
     host_url = f"http://{socket.gethostname()}.local:{args.port}/"
     print(f"Serving live inference feed on port {args.port}")
@@ -70,7 +82,8 @@ def main() -> None:
         # threaded and would stall the stream under load.
         serve(app, host=args.host, port=args.port, threads=8)
     finally:
-        worker.stop()
+        capture.stop()
+        inference.stop()
         camera.release()
 
 

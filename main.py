@@ -30,6 +30,8 @@ def parse_args() -> argparse.Namespace:
                    help="webcam index (e.g. 0) or device path (/dev/video0)")
     p.add_argument("--cam-width", type=int, default=1280)
     p.add_argument("--cam-height", type=int, default=720)
+    p.add_argument("--mirror", action="store_true",
+                   help="flip the feed horizontally (selfie/mirror view)")
 
     p.add_argument("--input-size", type=int,
                    help="override model input side length (auto-detected otherwise)")
@@ -71,7 +73,7 @@ def main() -> None:
     # Capture drives the smooth stream; inference runs independently and only
     # updates the predictions the capture loop overlays.
     capture = CaptureWorker(camera, state, broker, jpeg_quality=args.jpeg_quality,
-                            detect_threshold=args.detect_threshold)
+                            detect_threshold=args.detect_threshold, mirror=args.mirror)
     inference = InferenceWorker(classifier, state)
     capture.start()
     inference.start()

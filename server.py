@@ -97,13 +97,15 @@ class CaptureWorker(threading.Thread):
     """Camera -> overlay latest predictions -> JPEG -> broker. Drives the stream."""
 
     def __init__(self, camera: Camera, state: SharedState, broker: FrameBroker,
-                 jpeg_quality: int = 80, detect_threshold: float = 0.5) -> None:
+                 jpeg_quality: int = 80, detect_threshold: float = 0.5,
+                 mirror: bool = False) -> None:
         super().__init__(daemon=True, name="capture")
         self.camera = camera
         self.state = state
         self.broker = broker
         self.jpeg_quality = jpeg_quality
         self.detect_threshold = detect_threshold
+        self.mirror = mirror
         self._stop_event = threading.Event()
         self.fps = 0.0
 
@@ -118,6 +120,11 @@ class CaptureWorker(threading.Thread):
             if frame is None:
                 time.sleep(0.01)
                 continue
+
+            # Flip horizontally before anything else, so the stream, the overlay
+            # text, and the frame inference sees are all consistently mirrored.
+            if self.mirror:
+                frame = cv2.flip(frame, 1)
 
             now = time.monotonic()
             self.fps = _ema(self.fps, now - last)

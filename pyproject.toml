@@ -1,0 +1,18 @@
+[project]
+name = "rp-live-demo"
+version = "0.1.0"
+description = "Live webcam ONNX vision-transformer inference, streamed Pi -> laptop over MJPEG/HTTP"
+readme = "README.md"
+# Pinned below 3.13 so onnxruntime + opencv ship prebuilt aarch64 wheels for
+# the Raspberry Pi. Bump only if you've confirmed wheels exist for your Pi.
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "onnxruntime>=1.18",
+    "opencv-python-headless>=4.9",
+    "numpy>=1.26",
+    "flask>=3.0",
+    "waitress>=3.0",
+]
+
+[tool.uv]
+package = false
